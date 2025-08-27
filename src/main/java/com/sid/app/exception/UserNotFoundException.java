@@ -5,10 +5,9 @@ package com.sid.app.exception;
  */
 public class UserNotFoundException extends RuntimeException {
 
-    private static final long serialVersionUID = -2359863924124256L;
+  private static final long serialVersionUID = -2359863924124256L;
 
-    public UserNotFoundException(String id) {
-        super("Could not found the user with id " + id);
-    }
-
+  public UserNotFoundException(String id) {
+    super("Could not found the user with id " + id);
+  }
 }

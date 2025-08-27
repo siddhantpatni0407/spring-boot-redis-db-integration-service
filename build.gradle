@@ -4,6 +4,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
     id 'pmd'
     id 'jacoco'
+    id 'com.diffplug.spotless' version '6.23.0'  // Spotless plugin
 }
 
 group = 'com.sid'
@@ -124,6 +125,29 @@ tasks.named('jacocoTestCoverageVerification') {
         jacocoExcludes.each { exclude it }
     }
     sourceDirectories.from = files(sourceSets.main.allSource.srcDirs)
+}
+
+spotless {
+    java {
+        // Apply Google Java Format
+        googleJavaFormat('1.17.0')
+
+        // Include all source files
+        target 'src/**/*.java'
+
+        // Remove trailing whitespace
+        trimTrailingWhitespace()
+
+        // Ensure files end with a newline
+        endWithNewline()
+    }
+
+    // Optional: Format other languages
+    // format 'misc', {
+    //     target '*.gradle', '*.md'
+    //     trimTrailingWhitespace()
+    //     endWithNewline()
+    // }
 }
 
 // ---------------- Build Task ----------------

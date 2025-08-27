@@ -5,9 +5,6 @@ package com.sid.app.constants;
  */
 public class AppConstants {
 
-    /**
-     * Below Constants are used for Endpoint.
-     */
-    public static final String EMPLOYEE_ENDPOINT = "/api/v1/redis-db-integration-service/employee";
-
+  /** Below Constants are used for Endpoint. */
+  public static final String EMPLOYEE_ENDPOINT = "/api/v1/redis-db-integration-service/employee";
 }
