@@ -16,6 +16,7 @@ import com.sid.app.service.EmployeeService;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -42,13 +43,11 @@ public class EmployeeControllerTest {
 
   @BeforeEach
   void setup() {
-    // Initialize MockMvc with controller and exception handler
     mockMvc =
         MockMvcBuilders.standaloneSetup(employeeController)
             .setControllerAdvice(new ExceptionHandler())
             .build();
 
-    // Sample employees
     employee1 = new Employee();
     employee1.setId("1");
     employee1.setName("John Doe");
@@ -63,6 +62,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Create employee successfully")
   void testCreateEmployee() throws Exception {
     when(employeeService.saveEmployee(any(Employee.class))).thenReturn(employee1);
 
@@ -80,6 +80,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Get employee by ID successfully")
   void testGetEmployeeById_Found() throws Exception {
     when(employeeService.getEmployeeById("1")).thenReturn(employee1);
 
@@ -92,6 +93,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Get employee by ID not found")
   void testGetEmployeeById_NotFound() throws Exception {
     when(employeeService.getEmployeeById("999"))
         .thenThrow(new UserNotFoundException("User not found"));
@@ -105,6 +107,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Get all employees successfully")
   void testGetAllEmployees() throws Exception {
     List<Employee> employees = Arrays.asList(employee1, employee2);
     when(employeeService.getAllEmployees()).thenReturn(employees);
@@ -118,6 +121,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Update employee successfully")
   void testUpdateEmployee_Found() throws Exception {
     Employee updatedEmployee = new Employee();
     updatedEmployee.setId("1");
@@ -141,6 +145,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Update employee not found")
   void testUpdateEmployee_NotFound() throws Exception {
     Employee updatedEmployee = new Employee();
     updatedEmployee.setId("999");
@@ -161,6 +166,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Delete employee successfully")
   void testDeleteEmployee_Found() throws Exception {
     when(employeeService.deleteEmployee("1")).thenReturn("Employee removed!!");
 
@@ -173,6 +179,7 @@ public class EmployeeControllerTest {
   }
 
   @Test
+  @DisplayName("Delete employee not found")
   void testDeleteEmployee_NotFound() throws Exception {
     when(employeeService.deleteEmployee("999")).thenThrow(new UserNotFoundException("999"));
 
