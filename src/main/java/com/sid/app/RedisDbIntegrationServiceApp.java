@@ -6,8 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class RedisDbIntegrationServiceApp {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RedisDbIntegrationServiceApp.class, args);
-    }
-
+  public static void main(String[] args) {
+    SpringApplication.run(RedisDbIntegrationServiceApp.class, args);
+  }
 }

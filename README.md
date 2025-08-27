@@ -23,11 +23,12 @@ Spring Boot application for **Employee Management** using **Redis as the databas
 * **Lombok**
 * **Redis Server**
 * **Gradle build system**
-* **Plugins for code quality and reporting**:
+* **Plugins for code quality, formatting, and reporting**:
 
     * **PMD**: Static code analysis for best practices and code style
     * **Jacoco**: Code coverage analysis
     * **JUnit 5**: Unit and integration testing
+    * **Spotless**: Automatic code formatting and style enforcement using Google Java Format
 
 ---
 
@@ -115,7 +116,7 @@ The service will start at:
 
 ## 🧰 Gradle Plugins Overview
 
-This project uses several **Gradle plugins** to ensure code quality, testing, and maintainability:
+This project uses several **Gradle plugins** to ensure code quality, formatting, testing, and maintainability:
 
 ### 1. **Java Plugin**
 
@@ -163,6 +164,27 @@ This project uses several **Gradle plugins** to ensure code quality, testing, an
     * **HTML:** `build/reports/tests/test/index.html`
     * **XML:** `build/reports/tests/test/xml/`
 * Console logging shows **passed/failed/skipped tests** with full stack traces.
+
+### 7. **Spotless Plugin**
+
+* Ensures **automatic code formatting** and style enforcement.
+* Uses **Google Java Format** for all Java source files.
+* Features:
+
+    * Removes trailing whitespace
+    * Ensures files end with a newline
+    * Applies consistent formatting across the project
+* Commands:
+
+    * **Check formatting:**
+      ```bash
+      ./gradlew spotlessCheck
+      ```
+    * **Apply formatting:**
+      ```bash
+      ./gradlew spotlessApply
+      ```
+* Configured to target all Java files under `src/**/*.java`.
 
 ---
 
