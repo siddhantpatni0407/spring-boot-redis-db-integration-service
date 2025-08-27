@@ -5,10 +5,8 @@ import static org.mockito.Mockito.*;
 
 import com.sid.app.exception.UserNotFoundException;
 import com.sid.app.model.Employee;
-import com.sid.app.repository.EmployeeRepository;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,16 +14,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 
-/** Unit tests for EmployeeService class. */
 @ExtendWith(MockitoExtension.class)
 class EmployeeServiceTest {
 
-  @Mock private EmployeeRepository employeeRepository;
+  @Mock private RedisTemplate<String, Object> redisTemplate;
+
+  @Mock private HashOperations<String, String, Employee> hashOperations;
 
   @InjectMocks private EmployeeService employeeService;
 
   private Employee employee;
+  private static final String HASH_KEY = "Employee";
 
   @BeforeEach
   void setUp() {
@@ -33,12 +35,15 @@ class EmployeeServiceTest {
     employee.setId("101");
     employee.setName("John Doe");
     employee.setDepartment("Engineering");
+
+    // Mock RedisTemplate to return our HashOperations
+    doReturn(hashOperations).when(redisTemplate).opsForHash();
   }
 
   @Test
   @DisplayName("Should save an employee successfully")
   void testSaveEmployee() {
-    when(employeeRepository.save(employee)).thenReturn(employee);
+    doNothing().when(hashOperations).put(HASH_KEY, employee.getId(), employee);
 
     Employee saved = employeeService.saveEmployee(employee);
 
@@ -46,32 +51,31 @@ class EmployeeServiceTest {
     assertEquals("101", saved.getId());
     assertEquals("John Doe", saved.getName());
     assertEquals("Engineering", saved.getDepartment());
-    verify(employeeRepository, times(1)).save(employee);
+    verify(hashOperations, times(1)).put(HASH_KEY, employee.getId(), employee);
   }
 
   @Test
   @DisplayName("Should return employee when ID exists")
   void testGetEmployeeById_Found() {
-    when(employeeRepository.findById("101")).thenReturn(Optional.of(employee));
+    when(hashOperations.get(HASH_KEY, "101")).thenReturn(employee);
 
-    Optional<Employee> result = employeeService.getEmployeeById("101");
+    Employee result = employeeService.getEmployeeById("101");
 
-    assertTrue(result.isPresent());
-    assertEquals("John Doe", result.get().getName());
-    verify(employeeRepository, times(1)).findById("101");
+    assertNotNull(result);
+    assertEquals("John Doe", result.getName());
+    verify(hashOperations, times(1)).get(HASH_KEY, "101");
   }
 
   @Test
   @DisplayName("Should throw UserNotFoundException when ID does not exist")
   void testGetEmployeeById_NotFound() {
-    String id = "999";
-    when(employeeRepository.findById(id)).thenReturn(Optional.empty());
+    when(hashOperations.get(HASH_KEY, "999")).thenReturn(null);
 
     UserNotFoundException exception =
-        assertThrows(UserNotFoundException.class, () -> employeeService.getEmployeeById(id));
+        assertThrows(UserNotFoundException.class, () -> employeeService.getEmployeeById("999"));
 
-    assertEquals("Could not found the user with id " + id, exception.getMessage());
-    verify(employeeRepository, times(1)).findById(id);
+    assertEquals("Could not found the user with id 999", exception.getMessage());
+    verify(hashOperations, times(1)).get(HASH_KEY, "999");
   }
 
   @Test
@@ -82,39 +86,36 @@ class EmployeeServiceTest {
     emp2.setName("Jane Smith");
     emp2.setDepartment("Finance");
 
-    when(employeeRepository.findAll()).thenReturn(Arrays.asList(employee, emp2));
+    when(hashOperations.values(HASH_KEY)).thenReturn(Arrays.asList(employee, emp2));
 
     List<Employee> employees = employeeService.getAllEmployees();
 
     assertEquals(2, employees.size());
     assertEquals("John Doe", employees.get(0).getName());
     assertEquals("Jane Smith", employees.get(1).getName());
-    verify(employeeRepository, times(1)).findAll();
+    verify(hashOperations, times(1)).values(HASH_KEY);
   }
 
   @Test
   @DisplayName("Should delete employee when ID exists")
   void testDeleteEmployee_Success() {
-    when(employeeRepository.existsById("101")).thenReturn(true);
-    doNothing().when(employeeRepository).deleteById("101");
+    // HashOperations.delete() returns Long (number of removed entries)
+    when(hashOperations.delete(HASH_KEY, "101")).thenReturn(1L);
 
     assertDoesNotThrow(() -> employeeService.deleteEmployee("101"));
 
-    verify(employeeRepository, times(1)).existsById("101");
-    verify(employeeRepository, times(1)).deleteById("101");
+    verify(hashOperations, times(1)).delete(HASH_KEY, "101");
   }
 
   @Test
   @DisplayName("Should throw UserNotFoundException when deleting non-existent ID")
   void testDeleteEmployee_NotFound() {
-    String id = "999";
-    when(employeeRepository.existsById(id)).thenReturn(false);
+    when(hashOperations.delete(HASH_KEY, "999")).thenReturn(0L); // nothing deleted
 
     UserNotFoundException exception =
-        assertThrows(UserNotFoundException.class, () -> employeeService.deleteEmployee(id));
+        assertThrows(UserNotFoundException.class, () -> employeeService.deleteEmployee("999"));
 
-    assertEquals("Could not found the user with id " + id, exception.getMessage());
-    verify(employeeRepository, times(1)).existsById(id);
-    verify(employeeRepository, never()).deleteById(id);
+    assertEquals("Could not found the user with id 999", exception.getMessage());
+    verify(hashOperations, times(1)).delete(HASH_KEY, "999");
   }
 }
