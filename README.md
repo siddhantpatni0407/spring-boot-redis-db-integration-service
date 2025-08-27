@@ -22,6 +22,12 @@ Spring Boot application for **Employee Management** using **Redis as the databas
 * **Spring Data Redis**
 * **Lombok**
 * **Redis Server**
+* **Gradle build system**
+* **Plugins for code quality and reporting**:
+
+    * **PMD**: Static code analysis for best practices and code style
+    * **Jacoco**: Code coverage analysis
+    * **JUnit 5**: Unit and integration testing
 
 ---
 
@@ -95,11 +101,11 @@ cd spring-boot-employee-redis-service
 
 ---
 
-### 5. Run the Application
+### 5. Build and Run the Application
 
 ```bash
-mvn clean install
-mvn spring-boot:run
+./gradlew clean build
+./gradlew bootRun
 ```
 
 The service will start at:
@@ -107,15 +113,127 @@ The service will start at:
 
 ---
 
+## 🧰 Gradle Plugins Overview
+
+This project uses several **Gradle plugins** to ensure code quality, testing, and maintainability:
+
+### 1. **Java Plugin**
+
+* Compiles Java source code.
+* Configures the project to use **Java 21** toolchain.
+
+### 2. **Spring Boot Plugin**
+
+* Allows running Spring Boot applications via Gradle.
+* Provides tasks such as `bootRun` and `bootJar`.
+
+### 3. **Dependency Management Plugin**
+
+* Manages versions for Spring Boot dependencies.
+
+### 4. **PMD Plugin**
+
+* Static code analyzer to detect potential bugs, bad practices, and code style violations.
+* Configured reports:
+
+    * **HTML report:** `build/reports/pmd/pmd.html`
+    * **XML report:** `build/reports/pmd/pmd.xml`
+* Uses rulesets like `bestpractices.xml` and `codestyle.xml`.
+* Only analyzes `src/main/java` to avoid Java 21 compatibility issues with test classes.
+
+### 5. **Jacoco Plugin**
+
+* Provides **code coverage analysis** for tests.
+* Generates:
+
+    * **HTML report:** `build/reports/jacoco/html/index.html`
+    * **XML report:** `build/reports/jacoco/jacoco.xml`
+* Configured to exclude:
+
+    * Main Spring Boot class
+    * Constants
+    * Utility classes
+* Minimum coverage set to **70%**.
+
+### 6. **JUnit 5 Integration**
+
+* Configured in Gradle test task.
+* Test reports generated:
+
+    * **HTML:** `build/reports/tests/test/index.html`
+    * **XML:** `build/reports/tests/test/xml/`
+* Console logging shows **passed/failed/skipped tests** with full stack traces.
+
+---
+
 ## 🏗 Architecture Overview
 
-![employee-redis-architecture.png](src/main/resources/artifacts/employee-redis-architecture.png)
+```mermaid
+graph TD
+    A[Client / Frontend] -->|REST API| B[Spring Boot Application]
+    B --> C[EmployeeController]
+    C --> D[EmployeeService]
+    D --> E[RedisRepository]
+    E --> F[Redis Database]
+
+    subgraph SpringBootApp [Spring Boot Application]
+        C
+        D
+        E
+    end
+
+    style SpringBootApp fill: #f9f, stroke: #333, stroke-width: 2px
+    style A fill: #bbf, stroke: #333, stroke-width: 1px
+    style F fill: #fbf, stroke: #333, stroke-width: 1px
+```
 
 ---
 
 ## 🔄 Sequence Diagram
 
-![employee-redis-sequence-diagram.png](src/main/resources/artifacts/employee-redis-sequence-diagram.png)
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client
+    participant Controller as EmployeeController
+    participant Service as EmployeeService
+    participant Repository as RedisRepository
+%% Add Employee
+    Client ->> Controller: POST /employee {employee JSON}
+    Controller ->> Service: addEmployee(employee)
+    Service ->> Repository: save(employee)
+    Repository -->> Service: employee saved
+    Service -->> Controller: return saved employee
+    Controller -->> Client: 200 OK {employee JSON}
+%% Get All Employees
+    Client ->> Controller: GET /employee
+    Controller ->> Service: getAllEmployees()
+    Service ->> Repository: findAll()
+    Repository -->> Service: list of employees
+    Service -->> Controller: return list
+    Controller -->> Client: 200 OK [employees JSON]
+%% Get Employee by ID
+    Client ->> Controller: GET /employee/{id}
+    Controller ->> Service: getEmployeeById(id)
+    Service ->> Repository: findById(id)
+    Repository -->> Service: employee or null
+    Service -->> Controller: return employee
+    Controller -->> Client: 200 OK {employee JSON}
+%% Update Employee
+    Client ->> Controller: PUT /employee/{id} {updated JSON}
+    Controller ->> Service: updateEmployee(id, employee)
+    Service ->> Repository: save(updated employee)
+    Repository -->> Service: updated employee
+    Service -->> Controller: return updated employee
+    Controller -->> Client: 200 OK {updated employee JSON}
+%% Delete Employee
+    Client ->> Controller: DELETE /employee/{id}
+    Controller ->> Service: deleteEmployee(id)
+    Service ->> Repository: deleteById(id)
+    Repository -->> Service: deleted
+    Service -->> Controller: return success message
+    Controller -->> Client: 200 OK "Employee deleted successfully"
+```
 
 ---
 
@@ -244,5 +362,7 @@ Employee deleted successfully
 * Implement **Pagination & Sorting**
 * Add **Spring Security** for Authentication
 * Integrate with **Kafka for Event Streaming**
+* Integrate **Checkstyle** for additional code style enforcement
+* Generate **CI/CD reports** using Gradle tasks
 
 ---

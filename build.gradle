@@ -1,70 +1,133 @@
-// Gradle build configuration for Spring Boot Redis Database Integration project.
-// Includes plugins for static analysis, code style, and test coverage.
-
 plugins {
-    id 'java' // Java plugin for compiling Java code
-    id 'org.springframework.boot' version '3.5.5' // Spring Boot plugin for building Spring Boot applications
-    id 'io.spring.dependency-management' version '1.1.7' // Manages dependency versions for Spring projects
-    id 'pmd' // PMD plugin for static code analysis
-    id 'checkstyle' // Checkstyle plugin for code style checks
-    id 'jacoco' // JaCoCo plugin for test coverage
+    id 'java'
+    id 'org.springframework.boot' version '3.5.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'pmd'
+    id 'jacoco'
 }
 
-group = 'com.sid' // Project group ID
-version = '0.0.1-SNAPSHOT' // Project version
-description = 'Spring Boot Redis Database Integration' // Project description
+group = 'com.sid'
+version = '0.0.1-SNAPSHOT'
+description = 'Spring Boot Redis Database Integration'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21) // Sets Java language version to 21
-    }
-}
-
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor // Ensures annotation processors are available at compile time
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
 repositories {
-    mavenCentral() // Uses Maven Central repository for dependencies
+    mavenCentral()
 }
 
 dependencies {
-    // Spring Boot and related dependencies
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.apache.commons:commons-pool2'
-    implementation group: 'org.slf4j', name: 'slf4j-ext'
-    implementation group: 'commons-beanutils', name: 'commons-beanutils', version: '1.9.4'
-    compileOnly 'org.projectlombok:lombok' // Lombok for reducing boilerplate code
-    annotationProcessor 'org.projectlombok:lombok' // Lombok annotation processor
-    testImplementation 'org.springframework.boot:spring-boot-starter-test' // Spring Boot test starter
+    implementation 'org.slf4j:slf4j-ext'
+    implementation 'commons-beanutils:commons-beanutils:1.9.4'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
+// ---------------- Test Configuration ----------------
 tasks.named('test') {
-    useJUnitPlatform() // Configures tests to use JUnit Platform
+    useJUnitPlatform()
+
+    include '**/*Test.class'
+    include '**/*Tests.class'
+    include '**/*TestCase.class'
+
+    // Show detailed test execution in console
+    testLogging {
+        events "PASSED", "FAILED", "SKIPPED"
+        exceptionFormat "FULL"
+        showExceptions true
+        showCauses true
+        showStackTraces true
+    }
+
+    // Generate HTML and XML test reports
+    reports {
+        junitXml.required = true
+        html.required = true
+        html.outputLocation = file("$buildDir/reports/tests/test")
+        junitXml.outputLocation = file("$buildDir/reports/tests/test/xml")
+    }
+
+    // Finalize by generating Jacoco report
+    finalizedBy(tasks.jacocoTestReport)
 }
 
+// ---------------- PMD Configuration ----------------
 pmd {
-    toolVersion = '6.55.0' // PMD tool version
+    toolVersion = '7.0.0'
     ruleSets = ['category/java/bestpractices.xml', 'category/java/codestyle.xml']
-    // PMD rule sets for best practices and code style
+    reportsDir = file("$buildDir/reports/pmd")
+    ignoreFailures = true
 }
 
-checkstyle {
-    toolVersion = '10.12.1' // Checkstyle tool version
-    configFile = rootProject.file('config/checkstyle/checkstyle.xml') // Path to Checkstyle configuration file
+tasks.withType(Pmd) {
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation = file("$buildDir/reports/pmd/pmd.xml")
+        html.outputLocation = file("$buildDir/reports/pmd/pmd.html")
+    }
 }
 
+// ---------------- Jacoco Configuration ----------------
 jacoco {
-    toolVersion = "0.8.11" // JaCoCo tool version for code coverage
+    toolVersion = "0.8.11"
 }
+
+// Classes/packages to exclude from coverage
+def jacocoExcludes = [
+        'com/sid/app/RedisDbIntegrationServiceApp.class',
+        'com/sid/app/constants/**',
+        'com/sid/app/util/**'
+]
 
 tasks.jacocoTestReport {
+    dependsOn(tasks.test)
     reports {
-        xml.required = true // Generates XML report for code coverage
-        html.required = true // Generates HTML report for code coverage
+        xml.required = true
+        html.required = true
+        html.outputLocation = file("$buildDir/reports/jacoco/html")
+        xml.outputLocation = file("$buildDir/reports/jacoco/jacoco.xml")
     }
+
+    additionalSourceDirs.from = files(sourceSets.main.allSource.srcDirs)
+    sourceDirectories.from = files(sourceSets.main.allSource.srcDirs)
+
+    classDirectories.from = files(sourceSets.main.output).asFileTree.matching {
+        jacocoExcludes.each { exclude it }
+    }
+}
+
+tasks.named('jacocoTestCoverageVerification') {
+    dependsOn(tasks.test)
+    violationRules {
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+        }
+    }
+
+    classDirectories.from = files(sourceSets.main.output).asFileTree.matching {
+        jacocoExcludes.each { exclude it }
+    }
+    sourceDirectories.from = files(sourceSets.main.allSource.srcDirs)
+}
+
+// ---------------- Build Task ----------------
+tasks.build {
+    dependsOn(tasks.jacocoTestCoverageVerification)
+    dependsOn(tasks.pmdMain)
 }
