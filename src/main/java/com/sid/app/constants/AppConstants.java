@@ -10,6 +10,4 @@ public class AppConstants {
      */
     public static final String EMPLOYEE_ENDPOINT = "/api/v1/redis-db-integration-service/employee";
 
-    public static final String DEFAULT_USER = "DEFAULT_USER";
-
 }
